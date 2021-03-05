@@ -1,4 +1,5 @@
 from bs4 import BeautifulSoup
+from functions import *
 import requests
 import streamlit as st
 

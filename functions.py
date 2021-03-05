@@ -88,17 +88,19 @@ def clean_data(dataset):
     master_data_combined = master_data_combined.drop(master_data_combined[master_data_combined['TEAM_ID_x'] == master_data_combined['TEAM_ID_y']].index)
     master_data_combined = master_data_combined.iloc[::2]
 
-    master_data_combined = master_data_combined.replace(['W','L'], [1, 0]) # win = 1, lose = 0
+    master_data_combined = master_data_combined.replace(['W','L'], [int(1), int(0)]) # win = 1, lose = 0
     
-    final_df = update_values(master_data_combined) # update values for all games
+    final_df = update_dataframe(master_data_combined) # update values for all games
     
     final_df.drop(final_df[(final_df['GAME_PLAYED_x'] == 1) | (final_df['GAME_PLAYED_y'] == 1 )].index, inplace=True) # omit first games of all teams
+    
+    final_df.dropna(inplace = True) # drop games that don't have WL value
     
     final_df.to_csv('nba_2020_clean.csv',index=False) 
     
     return
 
-def update_values(df):
+def update_dataframe(df):
     for i, row in df.iterrows():
     #         get the name of both teams
         team_1 = row['TEAM_ABBREVIATION_x']
@@ -252,8 +254,87 @@ def update_values(df):
         df.loc[i,'DIS_OREB_y'] = nba_teams[team_2]['DIS_OREB']
         df.loc[i,'DIS_DREB_y'] = nba_teams[team_2]['DIS_DREB'] 
     return df
+  
+def get_significant_variables(dataset):
+    df = pd.read_csv(dataset)
+    
+    features_list = ['DIS_ELO_x', 'HOME_COURT_x', 'DIS_OFFRATE_x', 'DIS_DEFRATE_x', 'DIS_PTS_x', 'DIS_AST_x', 'DIS_OREB_x', 'DIS_DREB_x']
+    target = 'WL_x'
+    
+    # Creating our independent and dependent variables
+    x = df[features_list]
+    y = df['PLUS_MINUS_x']
+    
+    model = sm.OLS(y,x)
+    results = model.fit()
+
+    features_list = []
+    for i in range(len(x.keys())):
+        if results.pvalues[i] <= 0.05:
+            features_list.append(model.exog_names[i])
+            
+    return df, features_list
+
+def predict_result(df, features_list, matchup_data):
+    models_dict = {
+        'Linear Regression': LinearRegression(),
+        # 'Logistic Regression':LogisticRegression(),
+        'Naive Bayes':GaussianNB(),
+        # 'Decision Trees':DecisionTreeClassifier(),
+        # 'SVM linear': svm.SVC(kernel='linear'),
+        'SVM rbf': svm.SVC(kernel='rbf'),
+        # 'Random Forest': RandomForestClassifier(n_estimators = 100),
+        # 'XGBoost': xgb.XGBClassifier(use_label_encoder=False)
+    }
+    
+    prediction_data = {} # store prediction for each model 
+    
+    # game = df.iloc[-1]
+    
+    for model_name in models_dict:
+        X_train = df[features_list].iloc[:len(df.index)-1]
+        X_test = [matchup_data[features_list]]
+        y_train = df['WL_x'].iloc[:len(df.index)-1]
         
-def train_models(dataset):
+        m = models_dict[model_name]
+
+        if model_name == 'Linear Regression':
+            y_train = df['PLUS_MINUS_x'].iloc[:len(df.index)-1]
+        
+        m.fit(X_train, y_train)
+        prediction = m.predict(X_test)
+
+        if model_name == 'Linear Regression':
+            if prediction[0] > 0:
+                prediction[0] = 1
+            else:
+                prediction[0] = 0
+                     
+        prediction_data[model_name] = prediction[0]
+        
+        print(model_name + ':', prediction[0])
+    
+    final_prediction = 0
+    for k, v in prediction_data.items():
+        final_prediction += v
+    
+    final_prediction = final_prediction / 3
+    print('Average outcome score:', final_prediction)
+    print('Predicted Outcome:', round(final_prediction))
+    print('Actual Outcome:', game['WL_x'])
+    return 
+
+def get_matchup_data(team_x, team_y): # ideally team_x and team_y should be in abbreviation i.e. 'GSW' format 
+    teams = [team_x, team_y]
+    for team in teams:
+        team = nba_teams[team]
+        # please carry on to create a dataframe row containing the 8 (variables) columns and respective values
+        
+    return matchup_data
+        
+
+# to test f1 score of various ML models      
+def train_test_models(dataset):
     df = pd.read_csv(dataset)
     
     models_dict = {
@@ -284,20 +365,20 @@ def train_models(dataset):
     for i in range(len(x.keys())):
         if results.pvalues[i] <= 0.05:
             features_list.append(model.exog_names[i])
-            
-    X_train = train_set[features_list]
-    X_test = test_set[features_list]
-    y_train = train_set['WL_x']
-    y_test = test_set['WL_x']
     
     performance_data = {} # store f1 score for each model 
     
     for model_name in models_dict:
+        X_train = train_set[features_list]
+        X_test = test_set[features_list]
+        y_train = train_set['WL_x']
+        y_test = test_set['WL_x']
+        
         m = models_dict[model_name]
 
         if model_name == 'Linear Regression':
             y_train = train_set['PLUS_MINUS_x']
-
+        
         m.fit(X_train, y_train)
         predictions = m.predict(X_test)
 
@@ -307,7 +388,7 @@ def train_models(dataset):
                     predictions[i] = 1
                 else:
                     predictions[i] = 0
-                    
+                     
         f1 = f1_score(y_test,predictions)
         
         # adding into the performance data dict
@@ -320,4 +401,7 @@ def train_models(dataset):
     
 # extract_api_data()
 # clean_data('nba_2020.csv')
-train_models('nba_2020_clean.csv')
+# df, features_list = get_significant_variables('nba_2020_clean.csv')
+# predict_result(df, features_list, matchup_data)
+# df = pd.read_csv('nba_2020_clean.csv')
+# print(df['WL_x'])
