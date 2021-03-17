@@ -1,0 +1,7 @@
+bs4
+lxml
+requests
+re
+statsmodels
+nba_api
+sklearn
