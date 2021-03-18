@@ -396,7 +396,8 @@ def get_matchups():
             "SA":"SAS",
             "WSH":"WAS",
             "NO":"NOP",
-            "UTAH":"UTA"
+            "UTAH":"UTA",
+            "NY":"NYK"
         }
 
     for i in range(0,len(teams_playing),2):
