@@ -9,9 +9,12 @@ import statsmodels.api as sm
 from nba_api.stats.static import teams
 from nba_api.stats.endpoints import leaguegamefinder
 # ML models
+from sklearn.linear_model import LogisticRegression
 from sklearn.linear_model import LinearRegression
 from sklearn.naive_bayes import GaussianNB
+from sklearn.tree import DecisionTreeClassifier, plot_tree
 from sklearn import svm
+from sklearn.ensemble import RandomForestClassifier
 
 
 st.set_page_config(
@@ -291,12 +294,12 @@ class NBAPredictor:
 
         models_dict = {
             'Linear Regression': LinearRegression(),
-            # 'Logistic Regression':LogisticRegression(),
+            'Logistic Regression':LogisticRegression(),
             'Naive Bayes':GaussianNB(),
-            # 'Decision Trees':DecisionTreeClassifier(),
-            # 'SVM linear': svm.SVC(kernel='linear'),
+            'Decision Trees':DecisionTreeClassifier(),
+            'SVM linear': svm.SVC(kernel='linear'),
             'SVM rbf': svm.SVC(kernel='rbf'),
-            # 'Random Forest': RandomForestClassifier(n_estimators = 100),
+            'Random Forest': RandomForestClassifier(n_estimators = 100),
             # 'XGBoost': xgb.XGBClassifier(use_label_encoder=False)
         }
         
@@ -333,7 +336,7 @@ class NBAPredictor:
         for k, v in prediction_data.items():
             final_prediction += v
         
-        final_prediction = final_prediction / 3
+        final_prediction = final_prediction / 7
         print('Average outcome score:', final_prediction)
         print('Predicted Outcome:', round(final_prediction))
         # print('Actual Outcome:', game['WL_x'])
@@ -391,7 +394,9 @@ def get_matchups():
     error_name = {
             "GS":"GSW",
             "SA":"SAS",
-            "WSH":"WAS"
+            "WSH":"WAS",
+            "NO":"NOP",
+            "UTAH":"UTA"
         }
 
     for i in range(0,len(teams_playing),2):
