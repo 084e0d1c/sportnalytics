@@ -22,6 +22,7 @@ from sklearn.metrics import accuracy_score,roc_curve,auc,recall_score,f1_score,p
 nba_teams = {}
 
 def extract_api_data():
+    print('Extracting data from NBA API...')
     nbateams = pd.DataFrame(teams.get_teams())
     team_abrs = nbateams['abbreviation'].unique()
     
@@ -61,9 +62,12 @@ def extract_api_data():
 
     df = df.sort_values('GAME_DATE',ascending=True)
     df.to_csv('nba_2020.csv',index=False)
+    print('nba_2020.csv created')
+    print()
     return
 
 def clean_data(dataset):
+    print('Cleaning data...')
     master_data = pd.read_csv(dataset)
     master_data['GAME_DATE'] = pd.to_datetime(master_data['GAME_DATE']) # change GAME_DATE to datetime type
     master_data = master_data.sort_values(by = "GAME_DATE", ascending = True)
@@ -97,7 +101,8 @@ def clean_data(dataset):
     final_df.dropna(inplace = True) # drop games that don't have WL value
     
     final_df.to_csv('nba_2020_clean.csv',index=False) 
-    
+    print('nba_2020_clean.csv created')
+    print()
     return
 
 def update_dataframe(df):
@@ -399,8 +404,8 @@ def train_test_models(dataset):
     return
     
     
-# extract_api_data()
-# clean_data('nba_2020.csv')
+extract_api_data()
+clean_data('nba_2020.csv')
 # df, features_list = get_significant_variables('nba_2020_clean.csv')
 # predict_result(df, features_list, matchup_data)
 # df = pd.read_csv('nba_2020_clean.csv')
