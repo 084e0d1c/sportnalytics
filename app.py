@@ -557,7 +557,7 @@ def process_selected_match(selected_match):
 @st.cache
 def get_NBAPredictor():
     nba = NBAPredictor()
-    nba.extract_api_data(debugging=False)
+    nba.extract_api_data()
     nba.clean_data()
     nba.get_significant_variables()
     historical_df, *metrics, features_list = nba.show_historical_performance()
