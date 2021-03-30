@@ -346,12 +346,12 @@ class NBAPredictor:
     def get_matchup_data(self,home_team, away_team): 
         # ideally team_x and team_y should be in abbreviation i.e. 'GSW' format 
         working_df = self.prediction_df.copy()
-        home_columns = ['AFT_AVG_PTS_x','AFT_AVG_AST_x','AFT_AVG_OREB_x','AFT_AVG_DREB_x','OFFRATE_x','DEFRATE_x','ELO_x',]
-        away_columns = ['AFT_AVG_PTS_y','AFT_AVG_AST_y','AFT_AVG_OREB_y','AFT_AVG_DREB_y','OFFRATE_y','DEFRATE_y','ELO_y',]
+        home_columns = ['AFT_AVG_PTS_x','AFT_AVG_AST_x','AFT_AVG_OREB_x','AFT_AVG_DREB_x','OFFRATE_x','DEFRATE_x','ELO_x','HOME_COURT_x']
+        away_columns = ['AFT_AVG_PTS_y','AFT_AVG_AST_y','AFT_AVG_OREB_y','AFT_AVG_DREB_y','OFFRATE_y','DEFRATE_y','ELO_y','HOME_COURT_y']
 
         home_data = pd.DataFrame(working_df[working_df['TEAM_ABBREVIATION_x'] == home_team].iloc[-1,:]).transpose()
         away_data = pd.DataFrame(working_df[working_df['TEAM_ABBREVIATION_y'] == away_team].iloc[-1,:]).transpose()
-        matchup_data = pd.DataFrame(home_data[home_columns].values-away_data[away_columns].values,columns=['DIS_PTS_x', 'DIS_AST_x','DIS_OREB_x', 'DIS_DREB_x', 'DIS_OFFRATE_x', 'DIS_DEFRATE_x','DIS_ELO_x'])
+        matchup_data = pd.DataFrame(home_data[home_columns].values-away_data[away_columns].values,columns=['DIS_PTS_x', 'DIS_AST_x','DIS_OREB_x', 'DIS_DREB_x', 'DIS_OFFRATE_x', 'DIS_DEFRATE_x','DIS_ELO_x','HOME_COURT_x'])
             
         return matchup_data
 
@@ -561,11 +561,11 @@ def get_NBAPredictor():
     nba.clean_data()
     nba.get_significant_variables()
     historical_df, *metrics, features_list = nba.show_historical_performance()
-    training_f1,training_acc = nba.show_training_performance()
-    return nba, historical_df,metrics,features_list,training_f1,training_acc
+    # training_f1,training_acc = nba.show_training_performance()
+    return nba, historical_df,metrics,features_list
 
 matchups,game_date = get_matchups()
-nba, historical_df,metrics,features_list,training_f1,training_acc = get_NBAPredictor()
+nba, historical_df,metrics,features_list = get_NBAPredictor()
 st.title('NBA Predictor by Sportnalytics')
 selected_match = st.selectbox('Select the match for {}'.format(game_date),matchups)
 away,home = process_selected_match(selected_match)
@@ -576,9 +576,9 @@ if final_prediction < 1:
 else:
     st.write("{} will win!".format(home))
 
-st.subheader("Historical Performance")
-st.write("Accuracy: {:.2f}%".format(float(training_f1)*100))
-st.write("F1 Score: {:.2f}%".format(float(training_acc)*100))
+# st.subheader("Historical Performance")
+# st.write("Accuracy: {:.2f}%".format(float(training_f1)*100))
+# st.write("F1 Score: {:.2f}%".format(float(training_acc)*100))
 
 st.subheader('Performance for Current Season')
 st.write(historical_df)
