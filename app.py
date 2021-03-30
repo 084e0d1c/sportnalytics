@@ -437,7 +437,7 @@ class NBAPredictor:
 
             df = self.final_df.copy()
             # predict and test 2nd half of season
-            train_data = df[(df['GAME_PLAYED_x'] < 41) & (df['GAME_PLAYED_y'] < 41 )]
+            train_data = df
             models_dict = {
                 'Linear Regression': LinearRegression(),
                 'Logistic Regression':LogisticRegression(),
@@ -556,7 +556,7 @@ def process_selected_match(selected_match):
 @st.cache
 def get_NBAPredictor():
     nba = NBAPredictor()
-    nba.extract_api_data()
+    nba.extract_api_data(debugging=False)
     nba.clean_data()
     nba.get_significant_variables()
     historical_df, *metrics, features_list = nba.show_historical_performance()
