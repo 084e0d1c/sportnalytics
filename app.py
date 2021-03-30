@@ -15,6 +15,7 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.tree import DecisionTreeClassifier, plot_tree
 from sklearn import svm
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score,roc_curve,auc,recall_score,f1_score,precision_score,classification_report,confusion_matrix,auc
 
 
 st.set_page_config(
@@ -285,7 +286,6 @@ class NBAPredictor:
         self.prediction_df = df 
         self.features_list = features_list
         return 
-
     
     def predict_result(self, home_team, away_team):
         df = self.prediction_df.copy()
@@ -330,15 +330,15 @@ class NBAPredictor:
                         
             prediction_data[model_name] = prediction[0]
             
-            print(model_name + ':', prediction[0])
+            # print(model_name + ':', prediction[0])
         
         final_prediction = 0
         for k, v in prediction_data.items():
             final_prediction += v
         
         final_prediction = final_prediction / 5
-        print('Average outcome score:', final_prediction)
-        print('Predicted Outcome:', round(final_prediction))
+        # print('Average outcome score:', final_prediction)
+        # print('Predicted Outcome:', round(final_prediction))
         # print('Actual Outcome:', game['WL_x'])
         return final_prediction
 
@@ -353,6 +353,140 @@ class NBAPredictor:
         matchup_data = pd.DataFrame(home_data[home_columns].values-away_data[away_columns].values,columns=['DIS_PTS_x', 'DIS_AST_x','DIS_OREB_x', 'DIS_DREB_x', 'DIS_OFFRATE_x', 'DIS_DEFRATE_x','DIS_ELO_x'])
             
         return matchup_data
+
+    def show_historical_performance(self):
+        features_list = ['DIS_ELO_x', 'HOME_COURT_x', 'DIS_OFFRATE_x', 'DIS_DEFRATE_x', 'DIS_PTS_x', 'DIS_AST_x', 'DIS_OREB_x', 'DIS_DREB_x']
+        target = 'WL_x'
+
+        df = self.final_df.copy()
+        # predict and test 2nd half of season
+        test_data = df[(df['GAME_PLAYED_x'] > 41) & (df['GAME_PLAYED_y'] > 41 )]
+        test_data['Prediction'] = 0
+
+        models_dict = {
+            'Linear Regression': LinearRegression(),
+            'Logistic Regression':LogisticRegression(),
+            'Naive Bayes':GaussianNB(),
+            'SVM linear': svm.SVC(kernel='linear'),
+            'SVM rbf': svm.SVC(kernel='rbf'),
+        }
+
+        for index, row in test_data.iterrows():
+            # Creating training dataset for all previous games
+            idx = df.index[df['GAME_ID'] == row['GAME_ID']]
+            train_df = df.loc[:idx[0]-1]
+            test_df = row.to_frame().T
+
+            # Creating our independent and dependent variables
+            x = train_df[features_list]
+            y = train_df['PLUS_MINUS_x']
+
+            model = sm.OLS(y,x)
+            results = model.fit()
+
+            # Extracting significant features
+            features_list = []
+            for i in range(len(x.keys())):
+                if results.pvalues[i] <= 0.05:
+                    features_list.append(model.exog_names[i])
+
+            # Predicting game outcome
+            prediction_data = {}
+            for model_name in models_dict:
+                X_train = train_df[features_list]
+                y_train = train_df['WL_x']
+                X_test = test_df[features_list]
+
+                m = models_dict[model_name]
+
+                if model_name == 'Linear Regression':
+                    y_train = train_df['PLUS_MINUS_x']
+                
+                m.fit(X_train, y_train)
+                prediction = m.predict(X_test)
+
+                if model_name == 'Linear Regression':
+                    if prediction[0] > 0:
+                        prediction[0] = 1
+                    else:
+                        prediction[0] = 0
+                                
+                prediction_data[model_name] = prediction[0]
+                
+            final_prediction = 0
+            for k, v in prediction_data.items():
+                final_prediction += v
+
+            final_prediction = round(final_prediction / 5)
+
+            # Appending predicted outcome to test_data
+            test_data['Prediction'][index] = final_prediction
+
+        y_test = test_data['WL_x']
+        f1 = f1_score(y_test,test_data['Prediction'])
+        accuracy = accuracy_score(y_test,test_data['Prediction'])
+        precision = precision_score(y_test,test_data['Prediction'])
+        recall = recall_score(y_test,test_data['Prediction'])
+        test_data = test_data[['TEAM_NAME_x','TEAM_NAME_y','GAME_DATE_x','Prediction','WL_x']]
+        test_data.columns = ['Home','Away','Game Date','Prediction','Actual']
+        return test_data,f1,accuracy,precision,recall,features_list
+
+    def show_training_performance(self):
+            features_list = ['DIS_ELO_x', 'HOME_COURT_x', 'DIS_OFFRATE_x', 'DIS_DEFRATE_x', 'DIS_PTS_x', 'DIS_AST_x', 'DIS_OREB_x', 'DIS_DREB_x']
+            target = 'WL_x'
+
+            df = self.final_df.copy()
+            # predict and test 2nd half of season
+            train_data = df[(df['GAME_PLAYED_x'] < 41) & (df['GAME_PLAYED_y'] < 41 )]
+            models_dict = {
+                'Linear Regression': LinearRegression(),
+                'Logistic Regression':LogisticRegression(),
+                'Naive Bayes':GaussianNB(),
+                'SVM linear': svm.SVC(kernel='linear'),
+                'SVM rbf': svm.SVC(kernel='rbf'),
+            }
+
+            # Creating our independent and dependent variables
+            x = train_data[features_list]
+            y = train_data['PLUS_MINUS_x']
+
+            model = sm.OLS(y,x)
+            results = model.fit()
+
+            # Extracting significant features
+            features_list = []
+            for i in range(len(x.keys())):
+                if results.pvalues[i] <= 0.05:
+                    features_list.append(model.exog_names[i])
+
+            # Predicting game outcome
+            prediction_data = {}
+            for model_name in models_dict:
+                X_train = train_data[features_list]
+                y_train = train_data['WL_x']
+                m = models_dict[model_name]
+
+                if model_name == 'Linear Regression':
+                    y_train = train_data['PLUS_MINUS_x']
+                
+                m.fit(X_train, y_train)
+                prediction = m.predict(X_train)
+
+                if model_name == 'Linear Regression':
+                    prediction = np.where(prediction > 0, 1,0)
+                prediction_data[model_name] = prediction
+                
+            final_prediction = np.zeros_like(prediction)
+            for k, v in prediction_data.items():
+                final_prediction += v
+
+            final_prediction = final_prediction/5
+            final_prediction = np.where(final_prediction > 0, 1,0)
+
+            y_test = train_data['WL_x']
+            f1 = f1_score(y_test,final_prediction)
+            accuracy = accuracy_score(y_test,final_prediction)
+            return f1,accuracy
 
 def get_matchups():
     """
@@ -425,10 +559,12 @@ def get_NBAPredictor():
     nba.extract_api_data()
     nba.clean_data()
     nba.get_significant_variables()
-    return nba
+    historical_df, *metrics, features_list = nba.show_historical_performance()
+    training_f1,training_acc = nba.show_training_performance()
+    return nba, historical_df,metrics,features_list,training_f1,training_acc
 
 matchups,game_date = get_matchups()
-nba = get_NBAPredictor()
+nba, historical_df,metrics,features_list,training_f1,training_acc = get_NBAPredictor()
 st.title('NBA Predictor by Sportnalytics')
 selected_match = st.selectbox('Select the match for {}'.format(game_date),matchups)
 away,home = process_selected_match(selected_match)
@@ -438,3 +574,33 @@ if final_prediction < 1:
     st.write("{} will win!".format(away))
 else:
     st.write("{} will win!".format(home))
+
+st.subheader("Historical Performance")
+st.write("Accuracy: {:.2f}%".format(float(training_f1)*100))
+st.write("F1 Score: {:.2f}%".format(float(training_acc)*100))
+
+st.subheader('Performance for Current Season')
+st.write(historical_df)
+st.write("Accuracy: {:.2f}%".format(float(metrics[1])*100))
+st.write("F1 Score: {:.2f}%".format(float(metrics[0])*100))
+
+st.title("How does it work?")
+st.image("data_pipeline.png")
+st.subheader("Feature Engineering Highlight - ELO")
+st.write("Through our EDA, we identified that ELO was the most significant feature in determining if a team would win. Here's how we computed our ELO, drawing inspirations from [FiveThirtyEight](https://fivethirtyeight.com/features/how-we-calculate-nba-elo-ratings/).")
+st.write("Suppose we have 2 teams, Team 1 (ELO1) and 2 (ELO2):")
+st.latex("P(1) = \\frac {1} {1+10^ \\frac {ELO2-ELO1} {400}} \\text{ - Probability of Team 1 Winning.}")
+st.latex("P(2) = \\frac {1} {1+10^ \\frac {ELO1-ELO2} {400}} \\text{ - Probability of Team 2 Winning.}")
+st.latex("\\text{Let K} = 30")
+st.latex("\\text{If Team 1 wins}: \\space ELO1 = ELO1 + K * ( 1-P(1) ) \\space ELO2 = ELO2 + K * ( 0 -P(2) )")
+st.latex("\\text{If Team 2 wins}: \\space ELO1 = ELO1 + K * ( 0-P(1) ) \\space ELO2 = ELO2 + K * ( 1 -P(2) )")
+st.write("At the start of the season, we set every team at 1500 ELO and dynamically compute ELO as the season progresses. This gives us a superb feature for our models to learn from.")
+
+st.subheader("The Final Input into our Models")
+st.write("Instead of using raw inputs, the team decided to compute the disparity in averages between two opposing sides. This yielded better results.")
+st.write(features_list)
+st.write("Surprisingly, we found that with the simple inputs of disparities in ELO and Offensive Rating, we were able to construct a strong model that historically averages 71% in accuracy.")
+st.write("Our analysis showed that additional features were adding noise to our model and thus made it less generalisable. Hence, we opted to only use these two factors, which were the most significant.")
+
+st.title("Contributions")
+st.write("This was a project as part of the Data Associate Programme by SMU BIA. In the team, we have [Brandon](https://www.linkedin.com/in/brandon-tan-jun-da/), [Jian Yu](https://www.linkedin.com/in/chen-jian-yu/), [Samuel](https://www.linkedin.com/in/samuel-sim-7368241aa/) and [Leonard](https://www.linkedin.com/in/leonard-siah-0679631a1/). Thank you for checking us out and have a nice day!")
