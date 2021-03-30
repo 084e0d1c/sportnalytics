@@ -296,10 +296,10 @@ class NBAPredictor:
             'Linear Regression': LinearRegression(),
             'Logistic Regression':LogisticRegression(),
             'Naive Bayes':GaussianNB(),
-            'Decision Trees':DecisionTreeClassifier(),
+            # 'Decision Trees':DecisionTreeClassifier(),
             'SVM linear': svm.SVC(kernel='linear'),
             'SVM rbf': svm.SVC(kernel='rbf'),
-            'Random Forest': RandomForestClassifier(n_estimators = 100),
+            # 'Random Forest': RandomForestClassifier(n_estimators = 100),
             # 'XGBoost': xgb.XGBClassifier(use_label_encoder=False)
         }
         
@@ -336,7 +336,7 @@ class NBAPredictor:
         for k, v in prediction_data.items():
             final_prediction += v
         
-        final_prediction = final_prediction / 7
+        final_prediction = final_prediction / 5
         print('Average outcome score:', final_prediction)
         print('Predicted Outcome:', round(final_prediction))
         # print('Actual Outcome:', game['WL_x'])
