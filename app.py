@@ -281,7 +281,7 @@ class NBAPredictor:
 
         features_list = []
         for i in range(len(x.keys())):
-            if results.pvalues[i] <= 0.05:
+            if results.pvalues[i] <= 0.1:
                 features_list.append(model.exog_names[i])
         
         self.prediction_df = df 
@@ -457,7 +457,7 @@ class NBAPredictor:
             # Extracting significant features
             features_list = []
             for i in range(len(x.keys())):
-                if results.pvalues[i] <= 0.05:
+                if results.pvalues[i] <= 0.1:
                     features_list.append(model.exog_names[i])
 
             # Predicting game outcome
