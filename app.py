@@ -429,7 +429,9 @@ class NBAPredictor:
         precision = precision_score(y_test,test_data['Prediction'])
         recall = recall_score(y_test,test_data['Prediction'])
         test_data = test_data[['TEAM_NAME_x','TEAM_NAME_y','GAME_DATE_x','Prediction','WL_x']]
-        test_data.columns = ['Home','Away','Game Date','Prediction','Actual']
+        test_data['Correct(T/F)'] = np.where(test_data['Prediction']==test_data['WL_x'],"True","False")
+        test_data.columns = ['Home','Away','Game Date','Prediction','Actual','Correct(T/F)']
+        test_data.reset_index(inplace=True,drop=True)
         return test_data,f1,accuracy,precision,recall,features_list
 
     def show_training_performance(self):
@@ -600,8 +602,8 @@ st.write("At the start of the season, we set every team at 1500 ELO and dynamica
 st.subheader("The Final Input into our Models")
 st.write("Instead of using raw inputs, the team decided to compute the disparity in averages between two opposing sides. This yielded better results.")
 st.write(features_list)
-st.write("Surprisingly, we found that with the simple inputs of disparities in ELO and Offensive Rating, we were able to construct a strong model that historically averages 71% in accuracy.")
-st.write("Our analysis showed that additional features were adding noise to our model and thus made it less generalisable. Hence, we opted to only use these two factors, which were the most significant.")
+st.write("Surprisingly, we found that with the simple inputs of disparities in ELO, Home Court Advantage and Offensive Rating, we were able to construct a strong model that historically averages 71% in accuracy.")
+st.write("Our analysis showed that additional features were adding noise to our model and thus made it less generalisable. Hence, we opted to only use these three factors, which were the most significant.")
 
 st.title("Contributions")
 st.write("This was a project as part of the Data Associate Programme by SMU BIA. In the team, we have [Brandon](https://www.linkedin.com/in/brandon-tan-jun-da/), [Jian Yu](https://www.linkedin.com/in/chen-jian-yu/), [Samuel](https://www.linkedin.com/in/samuel-sim-7368241aa/) and [Leonard](https://www.linkedin.com/in/leonard-siah-0679631a1/). Thank you for checking us out and have a nice day!")
