@@ -16,7 +16,7 @@ from sklearn.tree import DecisionTreeClassifier, plot_tree
 from sklearn import svm
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score,roc_curve,auc,recall_score,f1_score,precision_score,classification_report,confusion_matrix,auc
-
+from time import sleep
 
 st.set_page_config(
     page_title='Sportnalytics',
@@ -68,6 +68,7 @@ class NBAPredictor:
                 games = gamefinder.get_data_frames()[0]
                 games = games[games['GAME_DATE'] > '2020-12-22'] # NBA 20/21 season starts from this date
                 df = df.append(games)
+                sleep(1)
 
         df = df.sort_values('GAME_DATE',ascending=True)
         self.df = df
