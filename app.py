@@ -70,7 +70,7 @@ class NBAPredictor:
                 df = df.append(games)
                 sleep(1)
 
-        df = df.sort_values('GAME_DATE',ascending=True)
+        # df = df.sort_values('GAME_DATE',ascending=True)
         self.df = df
         return 
 
